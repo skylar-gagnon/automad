@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<inputs>
+
+    <targetRunDir 
+        value="/home/bleen/"
+    /> <!-- Dir which holds temporary files on the target device -->
+    
+     <targetHostname 
+        value="10.42.0.50"
+    /> <!-- hostname for ssh purposes -->
+    
+    <targetSSHusername 
+        value="bleen"
+    /> <!-- ssh username-->
+    
+      <targetSSHpassword
+        value="bleen"
+    /> <!-- ssh password-->
+    
+    <!-- space separated -->
+     <coresToUse
+        value='0'
+    />
+
+   <time_to_measure value="5s" />
+    
+</inputs>
