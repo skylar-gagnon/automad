@@ -19,7 +19,7 @@ class Measurement_LLM(Measurement):
         #super().ping("10.42.0.50")
         
         super().copy_file_over_ftp()
-        compilation_command = "cd "+ self.targetRunDir + ";gcc -O0 -Wall program.c -o individual &> tmp;" 
+        compilation_command = "cd "+ self.targetRunDir + ";gcc -O0 -Wall -w program.c -o individual &> tmp;" 
         execution_command = "cd "+ self.targetRunDir + ";"
         for cores in self.coresToUse:
             # execution_command += "taskset -c " + str(cores) + " ./individual >> tmp &;"

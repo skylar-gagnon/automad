@@ -10,7 +10,8 @@ class Parser:
         self.unit = 'h'
         self.truetime = None
         self.model_name = "reddest-panda/AutoMAD-RL-2"
-        self.config_name = "measure.xml"
+        self.config_name = "configs/measure.xml"
+        self.template_name = "arm/pwr_template.c"
         self.run_name = self.get_default_run_name()
 
         self.usage_msg = """
@@ -76,6 +77,7 @@ Example: python3 run.py 24h -m Model -c config.xml -r testrun"""
         self.model_name = self.check_flag("-m", self.model_name)
         self.config_name = self.check_flag("-c", self.config_name)
         self.run_name = self.check_flag("-r", self.run_name)
+        self.template_name = self.check_flag("-t", self.template_name)
 
         self.get_truetime()
 

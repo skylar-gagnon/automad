@@ -8,6 +8,6 @@ This directory some necessary setup for the ARMv8 device being fuzzed in order t
 An issue on my machine was the kernel rewriting the PMUSERENR_EL0 register in the event the CPU enters idle state. If the kernel module was unsuccessful, you can disable CPU idle state and retry enabling user access via the following steps:
 1. Run `make` if not already done.
 2. Run `sudo ./disable_idle.sh`, this will disable the idle state on all CPU cores
-3. If the kernel module is currently running (can be checked using `lsmod | grep enable_arm_pmu`), then remove the module using `rmmod enable_arm_mpu`.
-4. Rerun `insmod enable_arm_pmu.ko`.
+3. If the kernel module is currently running (can be checked using `lsmod | grep enable_arm_pmu`), then remove the module using `sudo rmmod enable_arm_mpu`.
+4. Rerun `sudo insmod enable_arm_pmu.ko`.
 5. Check the PMUSERENR_EL0 value again with `./read_pmuserenr`.

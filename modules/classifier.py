@@ -1,19 +1,26 @@
-import os, fileinput, sys
+import os, fileinput, re
 from modules.Measurement.Measurement_LLM import Measurement_LLM
 import modules.utils as utils
 
 class Classifier:
 
     #* TESTED
-    def __init__(self, config_name, max_ssh_attempts=3):
+    def __init__(self, template_name, config_name, max_ssh_attempts=3):
         try:
             self.measurement = Measurement_LLM(config_name)
             self.measurement.init()
         except FileNotFoundError:
             utils.throw_error(f"no file named {config_name} found")
 
+        try:
+            test = open(template_name, 'r')
+            self.template_name = template_name
+        except FileNotFoundError:
+            utils.throw_error(f"no file named {template_name} found")
+
         self.max_ssh_attempts = max_ssh_attempts
 
+        # Add more flags as needed
         self.flags = {
             "PROCESS_FAILURE" : 0,
             "SSH_FAILURE" : 0,
@@ -31,23 +38,22 @@ class Classifier:
 
     #TODO: Processes a snippet into serial and parallel form, sets process fail flag
     def process(self, raw_snippet):
-        snippet = ""
-        return snippet
+        return raw_snippet
     
     #* TESTED
-    def prep_program(self, snippet, name):
-        os.system(f"cp configs/template.c tmp/{name}")
-        for line in fileinput.input(f"tmp/{name}", inplace=1):
+    def prep_program(self, snippet):
+        os.system(f"cp {self.template_name} tmp/test_snippet.c")
+        for line in fileinput.input(f"tmp/test_snippet.c", inplace=1):
             if "<|snippet|>" in line:
                 print(f'{snippet}')
             else:
                 print(line, end="")
         fileinput.close()
-        self.measurement.set_source_file_path(f"tmp/{name}")
+        self.measurement.set_source_file_path(f"tmp/test_snippet.c")
 
     #* TESTED
-    def run(self, snippet, name):
-        self.prep_program(snippet, name)
+    def run(self, snippet):
+        self.prep_program(snippet)
         for _ in range(self.max_ssh_attempts):
             try:
                 raw_results = self.measurement.measure()
@@ -60,11 +66,15 @@ class Classifier:
 
     #TODO: Parses the results after running the code 
     def parse(self, raw_results):
-        return
+        results = {}
+        for line in raw_results:
+            name, value = line.split(':')
+            results.update({name : int(value)})
+        return results
     
     #? Unit tests
-    def get_results(self, snippet, name):
-        raw_results = self.run(snippet, name)
+    def get_results(self, snippet):
+        raw_results = self.run(snippet)
         return self.parse(raw_results)
     
     #TODO: Analyzes the parsed results, sets flags 
@@ -82,6 +92,3 @@ class Classifier:
 
         self.cleanup()
         return results
-
-
-classifier = Classifier("invalid_config")

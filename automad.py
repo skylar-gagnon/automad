@@ -8,7 +8,7 @@ from modules.logger import Logger
 parser = Parser()
 
 generator = Generator(parser.model_name)
-classifier = Classifier(parser.config_name)
+classifier = Classifier(parser.template_name, parser.config_name)
 logger = Logger(parser.run_name)
 timeout = time.time() + parser.truetime
 
