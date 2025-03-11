@@ -134,7 +134,7 @@ void main() {
         fence();
 
         /*
-        <|GADGET|>
+        <|SNIPPET|>
         */
 
         fence();

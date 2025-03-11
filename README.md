@@ -1,5 +1,6 @@
 # AutoMAD Repository
 ## Overview
+* Performed on Arm Cortex‑A78AE
 * automad.py is the script to launch AutoMAD
 * debug.py is used to test classes and general debugging for automad.py
 * modules/ contains all the class definitions for automad.py

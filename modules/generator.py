@@ -4,7 +4,7 @@ import modules.utils as utils
 class Generator:
 
     #* TESTED
-    def __init__(self, model_name, batch_size=5, device='cuda', prompt="Write a mircoarchitectural attack in ARM assembly."):
+    def __init__(self, model_name, batch_size=5, device='cuda', prompt="Write a program in ARM assembly that performs a microarchitectural attack.\nmain:\n\t.cfi_startproc\n"):
         self.device = device
         self.batch_size = batch_size
         self.prompt = prompt
@@ -12,9 +12,8 @@ class Generator:
             "min_length": -1,
             "max_new_tokens" : 500,
             "do_sample": True,
-            "top_k": 350,
-            "top_p": 0.4,
-            "temperature" : 0.1,
+            "top_k": 500,
+            "temperature" : 0.9,
         }
 
         try:

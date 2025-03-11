@@ -90,7 +90,7 @@ class Measurement(ABC):
                 ssh.set_missing_host_key_policy(client.AutoAddPolicy()) 
                 ssh.connect(self.targetHostname, username=self.targetSSHusername, password=self.targetSSHpassword)
                 sftp=ssh.open_sftp();
-                sftp.put(self.source_file_path,self.targetRunDir + "program.c")
+                sftp.put(self.source_file_path,self.targetRunDir + "test")
                 sftp.close()
                 ssh.close()
                 break    
