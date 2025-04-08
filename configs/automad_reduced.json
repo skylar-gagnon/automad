@@ -1,0 +1,13 @@
+{
+    "automad_path" : "/home/skylar_gpu/research/automad",
+    "runtime" : "5m",
+    "save_config" : true,
+    "train" : false,
+    "email_if_fail" : false,
+    "generator_kwargs" : {},
+    "classifier_kwargs" : {},
+    "logger_kwargs" : {
+        "run_name" : "debug",
+        "verbose" : true
+    }
+}

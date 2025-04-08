@@ -1,0 +1,42 @@
+{
+    "automad_path" : "~/research/automad",
+    "runtime" : "5m",
+    "save_config" : true,
+    "train" : false,
+    "email_if_fail" : false,
+    "email_config_name" : "configs/email.json",
+    "generator_kwargs" : {
+        "model_name" : "reddest-panda/AutoMAD-RL-3",
+        "batch_size" : 5,
+        "device" : "cuda",
+        "prompt" : "Write a program in ARM assembly that performs a microarchitectural attack.\nmain:\n\t.cfi_startproc\n",
+        "model_kwargs" : {
+            "min_length": -1,
+            "max_new_tokens" : 250,
+            "do_sample": true,
+            "top_k": 500,
+            "temperature" : 0.9
+            }
+    },
+    "classifier_kwargs" : {
+        "template_name" : "arm/pwr_template.c",
+        "measure_config_name" : "configs/measure.xml",
+        "max_ssh_attempts" : 3,
+        "verbose" : false
+    },
+    "logger_kwargs" : {
+        "run_name" : "run",
+        "top_n" : 3,
+        "verbose" : false
+    },
+    "train_kwargs" : {
+        "save_model_name" : "reddest-panda/AutoMAD-RL-3",
+        "train_model_name" : "reddest-panda/AutoMAD-RL-2",
+        "ref_model_name" : "reddest-panda/AutoMAD-small",
+        "make_dataset" : false,
+        "dataset_size" : 32000,
+        "dataset_name" : "data/prompts.csv",
+        "push_to_hub" : true,
+        "epochs" : 6
+    }
+}

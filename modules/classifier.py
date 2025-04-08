@@ -1,25 +1,26 @@
-import os, fileinput, re, subprocess
+import os, fileinput, re
 from modules.Measurement.Measurement_LLM import Measurement_LLM
-import modules.utils as utils
 
 class Classifier:
-
     #* TESTED
-    def __init__(self, template_name, config_name, max_ssh_attempts=3):
-        try:
-            self.measurement = Measurement_LLM(config_name)
-            self.measurement.init()
-            self.measurement.set_source_file_path(f"tmp/test")
-        except FileNotFoundError:
-            utils.throw_error(f"no file named {config_name} found")
-
-        try:
-            test = open(template_name, 'r')
-            self.template_name = template_name
-        except FileNotFoundError:
-            utils.throw_error(f"no file named {template_name} found")
-
+    def __init__(self,
+                 path,
+                 train=False,
+                 template_name="arm/pwr_template.c",
+                 measure_config_name="configs/measure.xml",
+                 max_ssh_attempts=3,
+                 verbose=False
+                ):
+        
+        self.path = path
+        self.template_name = template_name
         self.max_ssh_attempts = max_ssh_attempts
+        self.train = train
+        self.verbose = verbose
+
+        self.measurement = Measurement_LLM(f"{path}/{measure_config_name}")
+        self.measurement.init()
+        self.measurement.set_source_file_path(f"{self.path}/tmp/test")
 
         # Add more flags as needed
         self.flags = {
@@ -30,7 +31,7 @@ class Classifier:
             "MNTR_FAIL" : 0,
         }
 
-        os.makedirs("tmp", exist_ok=True)
+        os.makedirs(f"{self.path}/tmp", exist_ok=True)
 
     #* TESTED
     def clear_flags(self):
@@ -38,19 +39,34 @@ class Classifier:
 
     #*TESTED
     def cleanup(self):
-        if (len(os.listdir("tmp")) > 0):
-            os.system("rm -r tmp/*")
-        if (os.listdir(".").count("test.log") == 1):
-            os.system("rm test.log")   
+        if (len(os.listdir(f"{self.path}/tmp")) > 0):
+            os.system(f"rm -r {self.path}/tmp/*")
+        if (os.listdir(".").count(f"{self.path}/test.log") == 1):
+            os.system(f"rm {self.path}/test.log")   
 
     #* TESTED
     def process(self, raw_snippet):
         lines = [l.strip() for l in raw_snippet.split("\n") if l.strip()] # removes excess whitespace and empty lines
         code = []
+        if not self.train: lines = lines[2:]
         for line in lines[:-1]: # Remove potentially unfinished line
             # For some reason branches named with this scheme do not compile, and all branches are labeled as such in generated code, so switching them to reduce compile errors
             if (re.search("\.L\d+", line) != None):
-                line = line.replace(".L", ".BRANCH")
+                line = line.replace(".L", "BRANCH")
+            elif line.find(".cfi") != -1: # Remove cfi stuff
+                continue
+            code.append('"' + line + '\\n\\t"') # formats for c program
+        return "\n".join(code)
+    
+    #! UNDER TEST
+    def process_test(self, raw_snippet):
+        lines = [l.strip() for l in raw_snippet.split("\n") if l.strip()] # removes excess whitespace and empty lines
+        code = []
+        if not self.train: lines = lines[2:]
+        for line in lines[:-1]: # Remove potentially unfinished line
+            # For some reason branches named with this scheme do not compile, and all branches are labeled as such in generated code, so switching them to reduce compile errors
+            if (re.search("\.L\d+", line) != None):
+                line = line.replace(".L", "BRANCH")
             elif line.find(".cfi") != -1: # Remove cfi stuff
                 continue
             code.append('"' + line + '\\n\\t"') # formats for c program
@@ -58,14 +74,14 @@ class Classifier:
     
     #* TESTED
     def compile(self, snippet):
-        os.system(f"cp {self.template_name} tmp/cut.c")
+        os.system(f"cp {self.path}/{self.template_name} {self.path}/tmp/cut.c")
         for line in fileinput.input(f"tmp/cut.c", inplace=1):
             if "<|SNIPPET|>" in line:
                 print(f'{snippet}')
             else:
                 print(line, end="")
         fileinput.close()
-        return os.system("aarch64-linux-gnu-gcc -static -lpthread -O0 tmp/cut.c -o tmp/test 2> tmp/errors")
+        return os.system(f"aarch64-linux-gnu-gcc -static -lpthread -O0 {self.path}/tmp/cut.c -o {self.path}/tmp/test 2> {self.path}/tmp/errors")
 
     #* TESTED
     def execute(self):
@@ -86,7 +102,7 @@ class Classifier:
         return results
     
     #* TESTED
-    def parse_pwr(self, raw_results, verbose=False):
+    def parse_pwr(self, raw_results):
         if (raw_results is None):
             best_p2p = -1
         elif (len(raw_results[1]) < 2):
@@ -94,7 +110,7 @@ class Classifier:
             self.flags["MNTR_FAIL"] = 1
         else:
             currents = [int(reading) for reading in raw_results[1]]
-            if (verbose) : print(len(currents)) #! DEBUG
+            if (self.verbose) : print(len(currents)) #! DEBUG
             best_p2p = 0
             prev_curr = currents[0]
             for curr in currents[1:]:
@@ -130,23 +146,8 @@ class Classifier:
         return raw_results
 
     #* TESTED
-    def get_results(self, raw_snippet):
+    def get_result(self, raw_snippet):
         raw_results = self.test_snippet(raw_snippet)
         self.cleanup()
         return {"best_p2p" : self.parse_pwr(raw_results), "flags" : self.flags}
     
-    #TODO: Analyzes the parsed results, sets flags 
-    def analyze(self, parallel_result, serial_result):
-        return
-
-    
-    # def check(self, raw_snippets):
-    #     results = []
-
-    #     for raw_snippet in raw_snippets:
-    #         parallel, serial = self.process(raw_snippet)
-    #         result = (self.get_results(parallel, "parallel.c"), self.get_results(serial, "serial.c"))
-    #         results.append(self.analyze(result))
-
-    #     self.cleanup()
-    #     return results

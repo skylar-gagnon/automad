@@ -1,20 +1,59 @@
-import time
-from modules.parser import Parser
+import time, sys, json
 from modules.classifier import Classifier
 from modules.generator import Generator
 from modules.logger import Logger
+from modules.utils import * 
 
-#! Initialization
-parser = Parser()
+def fuzz(config):
+    generator = Generator(config["automad_path"], **config["generator_kwargs"])
+    classifier = Classifier(config["automad_path"], train=False, **config["classifier_kwargs"])
+    logger = Logger(classifier.flags, config["automad_path"], **config["logger_kwargs"])
 
-generator = Generator(parser.model_name)
-classifier = Classifier(parser.template_name, parser.config_name)
-logger = Logger(parser.run_name)
-timeout = time.time() + parser.truetime
+    if (config["save_config"]) : logger.save_config(config)
 
-#! Fuzzing Loop
-parser.print_launch_msg()
-while time.time() < timeout:
-    snippets = generator.generate()
-    results = classifier.check(snippets)
-    logger.update(results)
+    #! Fuzzing Loop
+    while time.time() < (time.time() + runtime2sec(config["runtime"])):
+        snippets = generator.generate()
+        results = [classifier.get_result(s) for s in snippets]
+        logger.update(results, snippets)
+
+def fuzz_and_train(config):
+    generator = Generator(config["automad_path"], **config["generator_kwargs"])
+    classifier = Classifier(config["automad_path"], train=True, **config["classifier_kwargs"])
+    logger = Logger(classifier.flags, config["automad_path"], **config["logger_kwargs"])
+
+    if (config["save_config"]) : logger.save_config(config)
+
+    generator.train(classifier, logger, **config["train_kwargs"])
+
+def main():
+    # Get Config Name
+    try:
+        automad_config_name = sys.argv[1]
+    except Exception:
+        automad_config_name = "configs/automad.json"
+
+    # Get key arguments
+    with open(automad_config_name, "r") as file:
+        config = json.load(file)
+
+    # Begin Fuzzing
+    print_launch_msg(config)
+    if config["train"]:
+        fuzz_and_train(config)
+    else:
+        fuzz(config)
+    # try:
+    #     if config["train"]:
+    #         fuzz_and_train(config)
+    #     else:
+    #         fuzz(config)
+    # except:
+    #     print_exit_msg(1)
+    #     if config["email_if_fail"]:
+    #         notif_failure("AutoMAD Fuzzing Attempt", sys.exc_info(), config["email_config_name"])
+    #     exit(1)
+    # print_exit_msg(0)
+
+if __name__ == "__main__":
+    main()
