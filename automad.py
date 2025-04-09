@@ -12,7 +12,8 @@ def fuzz(config):
     if (config["save_config"]) : logger.save_config(config)
 
     #! Fuzzing Loop
-    while time.time() < (time.time() + runtime2sec(config["runtime"])):
+    stop_time = time.time() + runtime2sec(config["runtime"])
+    while time.time() < stop_time:
         snippets = generator.generate()
         results = [classifier.get_result(s) for s in snippets]
         logger.update(results, snippets)
@@ -39,21 +40,17 @@ def main():
 
     # Begin Fuzzing
     print_launch_msg(config)
-    if config["train"]:
-        fuzz_and_train(config)
-    else:
-        fuzz(config)
-    # try:
-    #     if config["train"]:
-    #         fuzz_and_train(config)
-    #     else:
-    #         fuzz(config)
-    # except:
-    #     print_exit_msg(1)
-    #     if config["email_if_fail"]:
-    #         notif_failure("AutoMAD Fuzzing Attempt", sys.exc_info(), config["email_config_name"])
-    #     exit(1)
-    # print_exit_msg(0)
+    try:
+        if config["train"]:
+            fuzz_and_train(config)
+        else:
+            fuzz(config)
+    except:
+        print_exit_msg(1)
+        if config["email_if_fail"]:
+            notif_failure("AutoMAD Fuzzing Attempt", sys.exc_info(), f"{config['automad_path']}/{config['email_config_path']}")
+        exit(1)
+    print_exit_msg(0)
 
 if __name__ == "__main__":
     main()

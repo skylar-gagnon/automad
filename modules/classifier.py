@@ -6,19 +6,19 @@ class Classifier:
     def __init__(self,
                  path,
                  train=False,
-                 template_name="arm/pwr_template.c",
-                 measure_config_name="configs/measure.xml",
+                 template_path="arm/pwr_template.c",
+                 measure_config_path="configs/measure.xml",
                  max_ssh_attempts=3,
                  verbose=False
                 ):
         
         self.path = path
-        self.template_name = template_name
+        self.template_path = template_path
         self.max_ssh_attempts = max_ssh_attempts
         self.train = train
         self.verbose = verbose
 
-        self.measurement = Measurement_LLM(f"{path}/{measure_config_name}")
+        self.measurement = Measurement_LLM(f"{self.path}/{measure_config_path}")
         self.measurement.init()
         self.measurement.set_source_file_path(f"{self.path}/tmp/test")
 
@@ -41,8 +41,6 @@ class Classifier:
     def cleanup(self):
         if (len(os.listdir(f"{self.path}/tmp")) > 0):
             os.system(f"rm -r {self.path}/tmp/*")
-        if (os.listdir(".").count(f"{self.path}/test.log") == 1):
-            os.system(f"rm {self.path}/test.log")   
 
     #* TESTED
     def process(self, raw_snippet):
@@ -63,18 +61,19 @@ class Classifier:
         lines = [l.strip() for l in raw_snippet.split("\n") if l.strip()] # removes excess whitespace and empty lines
         code = []
         if not self.train: lines = lines[2:]
-        for line in lines[:-1]: # Remove potentially unfinished line
-            # For some reason branches named with this scheme do not compile, and all branches are labeled as such in generated code, so switching them to reduce compile errors
-            if (re.search("\.L\d+", line) != None):
-                line = line.replace(".L", "BRANCH")
-            elif line.find(".cfi") != -1: # Remove cfi stuff
-                continue
-            code.append('"' + line + '\\n\\t"') # formats for c program
-        return "\n".join(code)
+        for line in lines: # Remove potentially unfinished line
+            for subline in line.split("\\n"):
+                # For some reason branches named with this scheme do not compile, and all branches are labeled as such in generated code, so switching them to reduce compile errors
+                if (re.search("\.L\d+", subline) != None):
+                    subline = subline.replace(".L", "BRANCH")
+                elif subline.find(".cfi") != -1: # Remove cfi stuff
+                    continue
+                code.append('"' + subline + '\\n\\t"') # formats for c program
+        return "\n".join(code[:-1])
     
     #* TESTED
     def compile(self, snippet):
-        os.system(f"cp {self.path}/{self.template_name} {self.path}/tmp/cut.c")
+        os.system(f"cp {self.path}/{self.template_path} {self.path}/tmp/cut.c")
         for line in fileinput.input(f"tmp/cut.c", inplace=1):
             if "<|SNIPPET|>" in line:
                 print(f'{snippet}')

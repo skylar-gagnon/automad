@@ -19,11 +19,11 @@ def runtime2sec(runtime):
         case _:
             throw_error("invalid unit for runtime")
 
-def notif_failure(name, exc_info, config_name):
+def notif_failure(name, exc_info, config_path):
     subject = f"{name} Failed"
     tb = '\n'.join(traceback.format_exception(exc_info[1]))
     content = f"Experiment failed due to {exc_info[0].__name__}.\n\nTraceback: {tb}"
-    with open(config_name, "r") as file:
+    with open(config_path, "r") as file:
         email_info = json.load(file)
 
     msg = EmailMessage()

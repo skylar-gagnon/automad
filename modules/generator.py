@@ -42,7 +42,7 @@ class AttackJudge(BasePairwiseJudge):
     def judge(self, prompts, completions, shuffle_order=False):
         choices = []
         for completion in completions:
-            results = [self.classifier.get_results(option, train=True) for option in completion]
+            results = [self.classifier.get_result(option) for option in completion]
             self.logger.update(results, completion)
 
             better_option = 0
@@ -62,7 +62,7 @@ class Generator:
     def __init__(self,
                  path,
                  model_name="reddest-panda/AutoMAD-RL-3",
-                 batch_size=5,
+                 batch_size=2,
                  device='cuda',
                  prompt="Write a program in ARM assembly that performs a microarchitectural attack.\nmain:\n\t.cfi_startproc\n",
                  model_kwargs={
@@ -79,11 +79,10 @@ class Generator:
         self.prompt = prompt
         self.model_kwargs = model_kwargs
 
-        self.model = AutoModelForCausalLM.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=True)
         self.model.to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-        self.prompt_tensors = [self.tokenizer.encode(prompt, return_tensors="pt").to(self.device)] * self.batch_size
+        self.prompt_tensors = [self.tokenizer(prompt, return_tensors="pt").to(self.device)] * self.batch_size
 
     #* TESTED
     def set_prompt(self, prompt):
@@ -109,7 +108,7 @@ class Generator:
         response_tensors = []
 
         for prompt in self.prompt_tensors:
-            response = self.model.generate(prompt, **self.model_kwargs)
+            response = self.model.generate(**prompt, pad_token_id=self.tokenizer.eos_token_id, **self.model_kwargs)
             response_tensors.append(response.squeeze().to(self.device))
             
         return [self.tokenizer.decode(r.squeeze()) for r in response_tensors]
@@ -117,28 +116,33 @@ class Generator:
     def train(self,
               classifier,
               logger,
-              save_model_name="reddest-panda/AutoMAD-RL-3",
+              save_model_name="reddest-panda/AutoMAD-debug",
               train_model_name="reddest-panda/AutoMAD-RL-2",
               ref_model_name="reddest-panda/AutoMAD-small",
-              make_dataset=False,
+              make_dataset=True,
               dataset_size=32000,
-              dataset_name="data/prompts.csv",
-              push_to_hub=True,
+              dataset_path="data/prompts.csv",
+              push_to_hub=False,
+              log_training=False,
               epochs=6
               ):
         output_dir = save_model_name.split("/")[-1]
         if (make_dataset):
             self.make_dataset(dataset_size)
-            train_dataset = load_dataset("csv", data_files="data/prompts.csv", split="train")
+            train_dataset = load_dataset("csv", data_files=f"{self.path}/data/prompts.csv", split="train")
         else:
-            train_dataset = load_dataset("csv", data_files=dataset_name, split="train")
+            train_dataset = load_dataset("csv", data_files=dataset_path, split="train")
 
+        if log_training:
+            report_to = "wandb"
+        else:
+            report_to = "none"
 
-        model = AutoModelForCausalLM.from_pretrained(train_model_name)
-        ref_model = AutoModelForCausalLM.from_pretrained(ref_model_name)
+        model = AutoModelForCausalLM.from_pretrained(train_model_name, low_cpu_mem_usage=True)
+        ref_model = AutoModelForCausalLM.from_pretrained(ref_model_name, low_cpu_mem_usage=True)
         tokenizer = AutoTokenizer.from_pretrained(train_model_name)
         judge = AttackJudge(classifier, logger)
-        training_args = OnlineDPOConfig(output_dir=output_dir, logging_steps=10, per_device_train_batch_size=4, push_to_hub=push_to_hub, hub_strategy='checkpoint', gradient_accumulation_steps=2, max_new_tokens=250, max_length=300, num_train_epochs=epochs)
+        training_args = OnlineDPOConfig(output_dir=output_dir, logging_steps=10, per_device_train_batch_size=4, push_to_hub=push_to_hub, hub_strategy='checkpoint', gradient_accumulation_steps=2, max_new_tokens=250, max_length=300, num_train_epochs=epochs, report_to=report_to)
 
         trainer = OnlineDPOTrainer(
             model=model,ref_model=ref_model, judge=judge, args=training_args, processing_class=tokenizer, train_dataset=train_dataset

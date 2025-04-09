@@ -4,7 +4,7 @@
     "save_config" : true,
     "train" : false,
     "email_if_fail" : false,
-    "email_config_name" : "configs/email.json",
+    "email_config_path" : "configs/email.json",
     "generator_kwargs" : {
         "model_name" : "reddest-panda/AutoMAD-RL-3",
         "batch_size" : 5,
@@ -19,14 +19,15 @@
             }
     },
     "classifier_kwargs" : {
-        "template_name" : "arm/pwr_template.c",
-        "measure_config_name" : "configs/measure.xml",
+        "template_path" : "arm/pwr_template.c",
+        "measure_config_path" : "configs/measure.xml",
         "max_ssh_attempts" : 3,
         "verbose" : false
     },
     "logger_kwargs" : {
         "run_name" : "run",
         "top_n" : 3,
+        "save_responses" : false,
         "verbose" : false
     },
     "train_kwargs" : {
@@ -35,8 +36,9 @@
         "ref_model_name" : "reddest-panda/AutoMAD-small",
         "make_dataset" : false,
         "dataset_size" : 32000,
-        "dataset_name" : "data/prompts.csv",
+        "dataset_path" : "data/prompts.csv",
         "push_to_hub" : true,
+        "log_training" : false,
         "epochs" : 6
     }
 }

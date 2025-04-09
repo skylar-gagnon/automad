@@ -60,7 +60,7 @@ class Measurement(ABC):
 
     ## utility function for executing commands over ssh connection.. very common functionality
     def execute_ssh_command(self,command,continousAttempt=True,max_tries=10):
-        paramiko.util.log_to_file("test.log")
+        paramiko.util.log_to_file("tmp/test.log")
         tries=0
         while True:
             try:
@@ -83,7 +83,7 @@ class Measurement(ABC):
 
     #### utility function for copying the source file over ssh connection.. very common functionality        
     def copy_file_over_ftp(self,continousAttempt=False):
-        paramiko.util.log_to_file("test.log")
+        paramiko.util.log_to_file("tmp/test.log")
         while True:
             try:
                 ssh = SSHClient()
