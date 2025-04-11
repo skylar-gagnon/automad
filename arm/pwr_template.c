@@ -35,6 +35,11 @@ void thread_setup(int core) {
 	}
 }
 
+void dummy_func_call(void) {
+	asm volatile("nop\n");
+	return;
+}
+
 void *monitor(void *args) {
 	thread_setup(1);
 	char buf[BUF_SIZE];
@@ -63,7 +68,7 @@ void *monitor(void *args) {
 void *code_under_test(void *args) {
 	thread_setup(2);
 	pthread_barrier_wait(&start_mointor);
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < 20; i++) {
 		asm volatile(
 			<|SNIPPET|>
 		);

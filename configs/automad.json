@@ -22,12 +22,13 @@
         "template_path" : "arm/pwr_template.c",
         "measure_config_path" : "configs/measure.xml",
         "max_ssh_attempts" : 3,
+        "max_patch_attempts" : 3,
         "verbose" : false
     },
     "logger_kwargs" : {
         "run_name" : "run",
         "top_n" : 3,
-        "save_responses" : false,
+        "save_snippets" : false,
         "verbose" : false
     },
     "train_kwargs" : {

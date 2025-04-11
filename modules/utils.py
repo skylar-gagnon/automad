@@ -45,7 +45,7 @@ def print_launch_msg(config):
 def print_exit_msg(status):
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if status == 1:
-            print(f"--------------------------------\nAutoMAD run failed.\nExiting at {now}.")
+            print(f"--------------------------------\nAutoMAD run FAILED. Exiting at {now}.")
         else:
             print(f"--------------------------------\nAutoMAD exiting at {now}.")
 

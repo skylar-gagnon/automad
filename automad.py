@@ -14,9 +14,9 @@ def fuzz(config):
     #! Fuzzing Loop
     stop_time = time.time() + runtime2sec(config["runtime"])
     while time.time() < stop_time:
-        snippets = generator.generate()
-        results = [classifier.get_result(s) for s in snippets]
-        logger.update(results, snippets)
+        responses = generator.generate()
+        results = [classifier.get_result(s) for s in responses]
+        logger.update(results, responses)
 
 def fuzz_and_train(config):
     generator = Generator(config["automad_path"], **config["generator_kwargs"])
@@ -32,7 +32,7 @@ def main():
     try:
         automad_config_name = sys.argv[1]
     except Exception:
-        automad_config_name = "configs/automad.json"
+        automad_config_name = "configs/debug.json"
 
     # Get key arguments
     with open(automad_config_name, "r") as file:
@@ -45,12 +45,11 @@ def main():
             fuzz_and_train(config)
         else:
             fuzz(config)
+        print_exit_msg(0)
     except:
         print_exit_msg(1)
         if config["email_if_fail"]:
             notif_failure("AutoMAD Fuzzing Attempt", sys.exc_info(), f"{config['automad_path']}/{config['email_config_path']}")
-        exit(1)
-    print_exit_msg(0)
 
 if __name__ == "__main__":
     main()
