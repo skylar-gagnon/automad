@@ -3,19 +3,19 @@
 <inputs>
 
     <targetRunDir 
-        value="/home/bleen/"
+        value="/home/$USERNAME/"
     /> <!-- Dir which holds temporary files on the target device -->
     
      <targetHostname 
-        value="10.42.0.50"
+        value="xxx.xxx.xxx.xxx"
     /> <!-- hostname for ssh purposes -->
     
     <targetSSHusername 
-        value="bleen"
+        value="Username"
     /> <!-- ssh username-->
     
       <targetSSHpassword
-        value="bleen"
+        value="password"
     /> <!-- ssh password-->
     
     <!-- space separated -->

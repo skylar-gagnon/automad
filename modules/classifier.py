@@ -42,7 +42,7 @@ class Classifier:
     #*TESTED
     def cleanup(self):
         if (len(os.listdir(f"{self.path}/tmp")) > 0):
-            os.system(f"rm -r {self.path}/tmp")
+            os.system(f"rm -r {self.path}/tmp/*")
 
     #* TESTED
     def process(self, raw_snippet):
