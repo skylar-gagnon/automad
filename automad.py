@@ -3,11 +3,12 @@ from modules.classifier import Classifier
 from modules.generator import Generator
 from modules.logger import Logger
 from modules.utils import * 
+from datetime import datetime
 
-def fuzz(config):
+def fuzz(config, start_time):
     generator = Generator(config["automad_path"], **config["generator_kwargs"])
     classifier = Classifier(config["automad_path"], train=False, **config["classifier_kwargs"])
-    logger = Logger(classifier.flags, config["automad_path"], **config["logger_kwargs"])
+    logger = Logger(start_time, classifier.flags, config["automad_path"], **config["logger_kwargs"])
 
     if (config["save_config"]) : logger.save_config(config)
 
@@ -18,10 +19,10 @@ def fuzz(config):
         results = [classifier.get_result(s) for s in responses]
         logger.update(results, responses)
 
-def fuzz_and_train(config):
+def fuzz_and_train(config, start_time):
     generator = Generator(config["automad_path"], **config["generator_kwargs"])
     classifier = Classifier(config["automad_path"], train=True, **config["classifier_kwargs"])
-    logger = Logger(classifier.flags, config["automad_path"], **config["logger_kwargs"])
+    logger = Logger(start_time, classifier.flags, config["automad_path"], **config["logger_kwargs"])
 
     if (config["save_config"]) : logger.save_config(config)
 
@@ -39,12 +40,12 @@ def main():
         config = json.load(file)
 
     # Begin Fuzzing
-    print_launch_msg(config)
+    start_time = print_launch_msg(config)
     try:
         if config["train"]:
-            fuzz_and_train(config)
+            fuzz_and_train(config, start_time)
         else:
-            fuzz(config)
+            fuzz(config, start_time)
         print_exit_msg(0)
     except:
         print_exit_msg(1)

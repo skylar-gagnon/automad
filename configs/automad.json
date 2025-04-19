@@ -22,7 +22,8 @@
         "template_path" : "arm/pwr_template.c",
         "measure_config_path" : "configs/measure.xml",
         "max_ssh_attempts" : 3,
-        "max_patch_attempts" : 3,
+        "max_patch_attempts" : 1,
+        "reboot_after" : 100,
         "verbose" : false
     },
     "logger_kwargs" : {

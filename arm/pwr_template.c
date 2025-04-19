@@ -10,16 +10,23 @@ Template file which code snippet is inserted into
 #include <sched.h>
 #include <pthread.h>
 #include <sys/mman.h>
+#include <setjmp.h>
+#include <signal.h>
+
 
 #define BUF_SIZE 128
 
 FILE *curr2_input, *curr2_log;
 pthread_barrier_t start_mointor;
 char *mem;
-int stop = 0;
 
 static inline __attribute__((always_inline)) void fence(void) {
        asm volatile("dsb sy\nisb\n");
+}
+
+// Catches seg faults, less core dumps?
+void segfault_handler(int sig) {
+	asm volatile("nop\n");
 }
 
 void thread_setup(int core) {
@@ -60,7 +67,7 @@ void *monitor(void *args) {
 		fgets(buf, BUF_SIZE, curr2_input);	
 		fprintf(curr2_log, "%s", buf);
 		sleep(0.0011);
-	} while (!stop);
+	} while (1);
 	fclose(curr2_input);
 	fclose(curr2_log);
 }
@@ -68,22 +75,22 @@ void *monitor(void *args) {
 void *code_under_test(void *args) {
 	thread_setup(2);
 	pthread_barrier_wait(&start_mointor);
-	for (int i = 0; i < 20; i++) {
+	while (1) {
 		asm volatile(
 			<|SNIPPET|>
 		);
 	}
-	fence();
-	stop = 1;
 }
 
 //! ---- Main ---- !//
 int main(int argc, char **argv[]) {
 	// Set-up shared memory (less likely to seg fault?)
-	mem = (char *)mmap(NULL, 50 * 4096,				 
+	mem = (char *)mmap(NULL, 10 * 4096,				 
 		PROT_READ | PROT_WRITE,
 		MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0); 
-	memset(mem, 0x80, 50 * 4096);
+	memset(mem, 0x80, 10 * 4096);
+
+    signal(SIGSEGV, segfault_handler);
 	// Launching Threads
 	pthread_t monitor_thread, cut_thread;
 	pthread_barrier_init(&start_mointor, NULL, 2);

@@ -67,19 +67,20 @@ class Measurement(ABC):
                 ssh = SSHClient()
                 ssh.set_missing_host_key_policy(client.AutoAddPolicy()) 
                 ssh.connect(self.targetHostname, username=self.targetSSHusername, password=self.targetSSHpassword)
-                stdin,stdout,stderr =ssh.exec_command(command)
+                stdin,stdout,stderr = ssh.exec_command(command)
                 lines=[]
                 for line in stdout.readlines():
                     lines.append(line)
-                ssh.close()
                 return lines
-                
             except:
                 if continousAttempt and tries<max_tries:
                     tries=tries+1
                     continue
                 else:
                     raise("Exception: Unable to execute command "+str(command))
+            finally:
+                ssh.close()
+
 
     #### utility function for copying the source file over ssh connection.. very common functionality        
     def copy_file_over_ftp(self,continousAttempt=False):
@@ -91,14 +92,18 @@ class Measurement(ABC):
                 ssh.connect(self.targetHostname, username=self.targetSSHusername, password=self.targetSSHpassword)
                 sftp=ssh.open_sftp();
                 sftp.put(self.source_file_path,self.targetRunDir + "test")
-                sftp.close()
-                ssh.close()
                 break    
             except:
                 if continousAttempt:
                     continue
                 else:
                     raise("Exception: Unable to copy file")
+            finally:
+                sftp.close()
+                ssh.close()
+
+
+
 
     def ping (self,host):
         """

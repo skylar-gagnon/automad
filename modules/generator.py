@@ -62,7 +62,7 @@ class Generator:
     def __init__(self,
                  path,
                  model_name="reddest-panda/AutoMAD-RL-3",
-                 batch_size=2,
+                 batch_size=5,
                  device='cuda',
                  prompt="Write a program in ARM assembly that performs a microarchitectural attack.\nmain:\n\t.cfi_startproc\n",
                  model_kwargs={

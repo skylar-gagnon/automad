@@ -17,11 +17,17 @@ class Measurement_LLM(Measurement):
         super().copy_file_over_ftp()
 
         cd_command = "cd "+ self.targetRunDir + ";"
-        execution_command = "chmod +x test;timeout " + str(self.time_to_measure) + " ./test 2> tmp -k;"
+        execution_command = "chmod +x test; sudo chmod +r /sys/bus/i2c/drivers/ina3221/1-0040/hwmon/hwmon3/curr2_input; timeout " + str(self.time_to_measure) + " ./test 2> tmp -k;"
         error_command = "cat tmp"
-        log_command = "cat curr2_log; rm curr2_log tmp; touch curr2_log tmp"
+        log_command = "cat curr2_log"
+        cleanup_command = "killall test; rm curr2_log tmp test; touch curr2_log tmp"
 
         super().execute_ssh_command(cd_command + execution_command)
         stderr = super().execute_ssh_command(cd_command + error_command)
         log = super().execute_ssh_command(cd_command + log_command)
+        super().execute_ssh_command(cd_command + cleanup_command)
         return [stderr, log]
+    
+    def reboot(self):
+        command = "sudo reboot"
+        super().execute_ssh_command(command)

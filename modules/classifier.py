@@ -1,4 +1,5 @@
 import os, fileinput, re
+import numpy as np
 from modules.Measurement.Measurement_LLM import Measurement_LLM
 
 class Classifier:
@@ -8,8 +9,9 @@ class Classifier:
                  train=False,
                  template_path="arm/pwr_template.c",
                  measure_config_path="configs/measure.xml",
-                 max_ssh_attempts=3,
+                 max_ssh_attempts=5,
                  max_patch_attempts=1,
+                 reboot_after=100,
                  verbose=False
                 ):
         
@@ -17,6 +19,7 @@ class Classifier:
         self.template_path = template_path
         self.max_ssh_attempts = max_ssh_attempts
         self.max_patch_attempts = max_patch_attempts
+        self.reboot_after = reboot_after
         self.train = train
         self.verbose = verbose
 
@@ -55,6 +58,8 @@ class Classifier:
                 line = line.replace(".L", "BRANCH")
             elif line.find(".cfi") != -1: # Remove cfi stuff
                 continue
+            elif line.find("fork") != -1:
+                continue
             code.append('"' + line + '\\n\\t"') # formats for c program
         return "\n".join(code)
 
@@ -63,7 +68,7 @@ class Classifier:
         # Ignores first compile
         if (os.path.exists(f"{self.path}/tmp/errors")):
             # Get error msg
-            with open(f"{self.path}/tmp/errors", 'r') as f:
+            with open(f"{self.path}/tmp/errors", 'r', errors='ignore') as f:
                 err_msg = f.read()
             
             # Patch
@@ -116,23 +121,32 @@ class Classifier:
             results.update({name : int(value)})
         return results
     
+    def remove_outliers(self, data, threshold=1.5):
+        if len(data) == 0:
+            return data
+        q1 = np.percentile(data, 25)
+        q3 = np.percentile(data, 75)
+        iqr = q3 - q1
+        lower_bound = q1 - threshold * iqr
+        upper_bound = q3 + threshold * iqr
+        return [x for x in data if lower_bound <= x <= upper_bound]
+
     #* TESTED
     def parse_pwr(self, raw_results):
         if (raw_results is None):
-            best_p2p = -1
+            p2ps = [-1]
         elif (len(raw_results[1]) < 2):
-            best_p2p = -1
+            p2ps = [-1]
             self.flags["MNTR_FAIL"] = 1
         else:
-            currents = [int(reading) for reading in raw_results[1]]
+            currents = [int(reading) for reading in raw_results[1] if reading.strip()]
             if (self.verbose) : print(len(currents)) #! DEBUG
-            best_p2p = 0
+            p2ps = []
             prev_curr = currents[0]
             for curr in currents[1:]:
-                if abs(prev_curr - curr) > best_p2p:
-                    best_p2p = abs(prev_curr - curr)
+                p2ps.append(abs(prev_curr - curr))
                 prev_curr = curr
-        return best_p2p
+        return max(p2ps), (float(sum(p2ps)) / len(p2ps))
     
     #* TESTED
     def test_snippet(self, raw_snippet):
@@ -156,6 +170,7 @@ class Classifier:
             return None, snippet
         # If it fails to execute
         elif (len(raw_results[0]) != 0):
+            if (self.verbose): print(f"{raw_results[0]}") #! DEBUG
             self.flags["EXEC_FAIL"] = 1
             return None, snippet
         
@@ -165,5 +180,30 @@ class Classifier:
     def get_result(self, raw_snippet):
         raw_results, snippet = self.test_snippet(raw_snippet)
         self.cleanup()
-        return {"best_p2p" : self.parse_pwr(raw_results), "snippet" : snippet, "flags" : self.flags}
+        max_p2p, avg_p2p = self.parse_pwr(raw_results)
+        return {"max_p2p" : max_p2p, "avg_p2p" : avg_p2p, "snippet" : snippet, "flags" : self.flags}
     
+    #? ------------- DEMO CODE ------------- ?#
+
+    def parse_pwr_demo(self, raw_results):
+        if (raw_results is None):
+            p2ps = [-1]
+        elif (len(raw_results[1]) < 2):
+            p2ps = [-1]
+            self.flags["MNTR_FAIL"] = 1
+        else:
+            currents = [int(reading) for reading in raw_results[1] if reading.strip()]
+            if (self.verbose) : print(len(currents)) #! DEBUG
+            # p2ps = []
+            # prev_curr = currents[0]
+            # for curr in currents[1:]:
+            #     p2ps.append(abs(prev_curr - curr))
+            #     prev_curr = curr
+        return currents
+    
+    def demo(self, raw_snippet):
+        raw_results, snippet = self.test_snippet(raw_snippet)
+        self.cleanup()
+        currs = self.parse_pwr_demo(raw_results)
+        return currs
+        # return {"currs" : currs, "snippet" : snippet, "flags" : self.flags}

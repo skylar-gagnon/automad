@@ -41,6 +41,7 @@ def notif_failure(name, exc_info, config_path):
 def print_launch_msg(config):
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print(f"Run Details:\n{pprint.pformat(config)} \n--------------------------------\nLaunching AutoMAD at {now}.")
+        return now
 
 def print_exit_msg(status):
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
