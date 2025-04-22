@@ -24,7 +24,7 @@ static inline __attribute__((always_inline)) void fence(void) {
        asm volatile("dsb sy\nisb\n");
 }
 
-// Catches seg faults, less core dumps?
+// Catches seg faults, less core dumps
 void segfault_handler(int sig) {
 	asm volatile("nop\n");
 }

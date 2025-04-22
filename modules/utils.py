@@ -1,4 +1,4 @@
-import sys, smtplib, json, traceback, pprint
+import sys, smtplib, traceback, pprint
 from email.message import EmailMessage
 from datetime import datetime
 
@@ -19,22 +19,27 @@ def runtime2sec(runtime):
         case _:
             throw_error("invalid unit for runtime")
 
-def notif_failure(name, exc_info, config_path):
+def notif_failure(name, 
+                  exc_info,
+                  sender = None,
+                  reciever = None,
+                  port = 587,
+                  smtp_server = "smtp.gmail.com",
+                  password = None
+                  ):
     subject = f"{name} Failed"
     tb = '\n'.join(traceback.format_exception(exc_info[1]))
     content = f"Experiment failed due to {exc_info[0].__name__}.\n\nTraceback: {tb}"
-    with open(config_path, "r") as file:
-        email_info = json.load(file)
 
     msg = EmailMessage()
     msg.set_content(content)
     msg['Subject'] = subject
-    msg['From'] = email_info["from"]
-    msg['To'] = email_info["to"]
+    msg['From'] = sender
+    msg['To'] = reciever
 
-    s = smtplib.SMTP(email_info["smtp_server"], email_info["port"])
+    s = smtplib.SMTP(smtp_server, port)
     s.starttls()
-    s.login(email_info["from"], email_info["password"])
+    s.login(sender, password)
     s.send_message(msg)
     s.quit()
 

@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 from xml.dom import minidom
 from paramiko import SSHClient, client
 import paramiko
-import platform
-import os
+import platform, os
 
 class Measurement(ABC):
      

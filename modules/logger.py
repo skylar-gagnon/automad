@@ -9,14 +9,14 @@ class Logger:
                  path,
                  run_name="run",
                  top_n=5,
-                 save_snippets=False,
+                 save_data=False,
                  verbose=False
                  ):
         
         self.start_time = start_time
         self.stats = dict(stats) | {"TOTAL" : 0, "BEST_AVG_P2P" : [0 for _ in range(top_n)]}
         self.path = path
-        self.save_snippets = save_snippets
+        self.save_data = save_data
         self.verbose = verbose
 
         os.makedirs(f"{self.path}/logs", exist_ok=True)
@@ -63,7 +63,7 @@ class Logger:
             self.update_flags(r["flags"])
             self.update_p2p(r["avg_p2p"], responses[i])
             self.stats["TOTAL"] += 1
-        if (self.save_snippets): self.update_csv(responses, results)
+        if (self.save_data): self.update_csv(responses, results)
         if (self.verbose): self.print_verbose()
         time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         with open(f"{self.path}/logs/{self.run_name}/stats", "w") as f:

@@ -1,5 +1,5 @@
 {
-    "automad_path" : "/path/to/automad_dir",
+    "automad_path" : "/path/to/automad_directory",
     "runtime" : "24h",
     "save_config" : false,
     "train" : false,

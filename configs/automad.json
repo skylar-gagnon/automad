@@ -1,10 +1,16 @@
 {
-    "automad_path" : "~/research/automad",
+    "automad_path" : "path/to/automad_directory",
     "runtime" : "5m",
     "save_config" : true,
     "train" : false,
     "email_if_fail" : false,
-    "email_config_path" : "configs/email.json",
+    "email_kwargs" : {
+        "sender": "[sender's email]",
+        "reciever": "[receiver's email]",
+        "port": 587,
+        "smtp_server": "smtp.gmail.com",
+        "password": "[sender's app password]"
+    },
     "generator_kwargs" : {
         "model_name" : "reddest-panda/AutoMAD-RL-3",
         "batch_size" : 5,
@@ -19,17 +25,16 @@
             }
     },
     "classifier_kwargs" : {
-        "template_path" : "arm/pwr_template.c",
+        "template_path" : "dut/pwr_template.c",
         "measure_config_path" : "configs/measure.xml",
         "max_ssh_attempts" : 3,
         "max_patch_attempts" : 1,
-        "reboot_after" : 100,
         "verbose" : false
     },
     "logger_kwargs" : {
         "run_name" : "run",
         "top_n" : 3,
-        "save_snippets" : false,
+        "save_data" : false,
         "verbose" : false
     },
     "train_kwargs" : {

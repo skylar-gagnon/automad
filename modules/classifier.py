@@ -1,17 +1,17 @@
 import os, fileinput, re
 import numpy as np
 from modules.Measurement.Measurement_LLM import Measurement_LLM
+from time import sleep
 
 class Classifier:
     #* TESTED
     def __init__(self,
                  path,
                  train=False,
-                 template_path="arm/pwr_template.c",
+                 template_path="dut/pwr_template.c",
                  measure_config_path="configs/measure.xml",
                  max_ssh_attempts=5,
                  max_patch_attempts=1,
-                 reboot_after=100,
                  verbose=False
                 ):
         
@@ -19,7 +19,6 @@ class Classifier:
         self.template_path = template_path
         self.max_ssh_attempts = max_ssh_attempts
         self.max_patch_attempts = max_patch_attempts
-        self.reboot_after = reboot_after
         self.train = train
         self.verbose = verbose
 
@@ -32,8 +31,7 @@ class Classifier:
             "SSH_FAIL"  : 0,
             "COMP_FAIL" : 0,
             "EXEC_FAIL" : 0,
-            "PROC_FAIL" : 0,
-            "MNTR_FAIL" : 0,
+            "PROC_FAIL" : 0
         }
 
         os.makedirs(f"{self.path}/tmp", exist_ok=True)
@@ -134,19 +132,21 @@ class Classifier:
     #* TESTED
     def parse_pwr(self, raw_results):
         if (raw_results is None):
-            p2ps = [-1]
-        elif (len(raw_results[1]) < 2):
-            p2ps = [-1]
-            self.flags["MNTR_FAIL"] = 1
+            max_p2p = -1
+            avg_p2p = -1
         else:
             currents = [int(reading) for reading in raw_results[1] if reading.strip()]
             if (self.verbose) : print(len(currents)) #! DEBUG
-            p2ps = []
+            max_p2p = 0
+            avg_p2p = 0.0
             prev_curr = currents[0]
             for curr in currents[1:]:
-                p2ps.append(abs(prev_curr - curr))
+                p2p = abs(prev_curr - curr)
+                if p2p > max_p2p: max_p2p = p2p
+                avg_p2p += p2p
                 prev_curr = curr
-        return max(p2ps), (float(sum(p2ps)) / len(p2ps))
+            avg_p2p = avg_p2p / float(len(currents) - 1)
+        return max_p2p, avg_p2p
     
     #* TESTED
     def test_snippet(self, raw_snippet):
@@ -169,8 +169,8 @@ class Classifier:
             self.flags["SSH_FAIL"] = 1
             return None, snippet
         # If it fails to execute
-        elif (len(raw_results[0]) != 0):
-            if (self.verbose): print(f"{raw_results[0]}") #! DEBUG
+        elif (len(raw_results[1]) < 2):
+            if (self.verbose): print(f"STDER: {raw_results[0]}") #! DEBUG
             self.flags["EXEC_FAIL"] = 1
             return None, snippet
         
@@ -185,25 +185,71 @@ class Classifier:
     
     #? ------------- DEMO CODE ------------- ?#
 
-    def parse_pwr_demo(self, raw_results):
+    def demo_test_snippet(self, raw_snippet):
+        self.clear_flags()
+        snippet = self.process(raw_snippet)
+        with open("demo", "w") as f:
+            f.write(f"Processed Snippet:\n{snippet}")
+        sleep(5)
+        # If proccessing creates an empty snippet
+        if (len(snippet) == 0):
+            self.flags["PROC_FAIL"] = 1
+            return None, snippet
+        
+        exit_status, snippet = self.compile(snippet)
+        with open("demo", "w") as f:
+            f.write(f"Patched Snippet:\n{snippet}")
+        sleep(5)
+        os.system(f"cp {self.path}/tmp/cut.c demo")
+        sleep(10)
+        # If it fails to compile
+        if (exit_status != 0):
+            self.flags["COMP_FAIL"] = 1
+            return None, snippet
+        
+        raw_results = self.execute()
+        # If it fails to ssh
         if (raw_results is None):
-            p2ps = [-1]
+            self.flags["SSH_FAIL"] = 1
+            return None, snippet
+        # If it fails to execute
         elif (len(raw_results[1]) < 2):
-            p2ps = [-1]
-            self.flags["MNTR_FAIL"] = 1
+            if (self.verbose): print(f"{raw_results[0]}") #! DEBUG
+            self.flags["EXEC_FAIL"] = 1
+            return None, snippet
+        
+        with open("demo", "w") as f:
+            f.write(f"First 100 Measurements:\n{str(raw_results[1][:100])}")
+        sleep(5)
+        return raw_results, snippet
+
+    def demo_parse_pwr(self, raw_results):
+        if (raw_results is None):
+            max_p2p = -1
+            avg_p2p = -1
+            currents = []
         else:
             currents = [int(reading) for reading in raw_results[1] if reading.strip()]
             if (self.verbose) : print(len(currents)) #! DEBUG
-            # p2ps = []
-            # prev_curr = currents[0]
-            # for curr in currents[1:]:
-            #     p2ps.append(abs(prev_curr - curr))
-            #     prev_curr = curr
-        return currents
+            max_p2p = 0
+            avg_p2p = 0.0
+            prev_curr = currents[0]
+            for curr in currents[1:]:
+                p2p = abs(prev_curr - curr)
+                if p2p > max_p2p: max_p2p = p2p
+                avg_p2p += p2p
+                prev_curr = curr
+            avg_p2p = avg_p2p / float(len(currents) - 1)
+            with open("demo", "w") as f:
+                f.write(f"Stats:\n\tAvg: {avg_p2p} mA\n\tMax: {max_p2p} mA")
+            sleep(5)
+        return max_p2p, avg_p2p, currents
     
     def demo(self, raw_snippet):
-        raw_results, snippet = self.test_snippet(raw_snippet)
+        with open("demo", "w") as f:
+            f.write(f"Snippet from Model:\n{raw_snippet}")
+        sleep(5)
+        raw_results, snippet = self.demo_test_snippet(raw_snippet)
         self.cleanup()
-        currs = self.parse_pwr_demo(raw_results)
-        return currs
-        # return {"currs" : currs, "snippet" : snippet, "flags" : self.flags}
+        max_p2p, avg_p2p, currs = self.demo_parse_pwr(raw_results)
+        return {"max_p2p" : max_p2p, "avg_p2p" : avg_p2p, "snippet" : snippet, "flags" : self.flags}, currs

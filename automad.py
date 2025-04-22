@@ -3,7 +3,6 @@ from modules.classifier import Classifier
 from modules.generator import Generator
 from modules.logger import Logger
 from modules.utils import * 
-from datetime import datetime
 
 def fuzz(config, start_time):
     generator = Generator(config["automad_path"], **config["generator_kwargs"])
@@ -50,7 +49,7 @@ def main():
     except:
         print_exit_msg(1)
         if config["email_if_fail"]:
-            notif_failure("AutoMAD Fuzzing Attempt", sys.exc_info(), f"{config['automad_path']}/{config['email_config_path']}")
+            notif_failure("AutoMAD Fuzzing Attempt", sys.exc_info(), **config['email_kwargs'])
 
 if __name__ == "__main__":
     main()
